@@ -65,7 +65,7 @@ end
 
 ##########################################################################
 
-pyio_jl(self::PyObject) = unsafe_pyjlwrap_to_objref(self."io")::IO
+pyio_jl(self::PyObject) = unsafe_pyjlwrap_load_value(self."io")::IO
 
 const PyIO = PyNULL()
 
@@ -120,11 +120,11 @@ end
 
 ##########################################################################
 
-function PyObject(io::IO)
-    pyio_initialize()
-    # pyjlwrap_new is necessary to avoid PyIO(io) calling PyObject(::IO)
-    PyIO(pyjlwrap_new(io))
-end
+# function PyObject(io::IO)
+#     pyio_initialize()
+#     # pyjlwrap_new is necessary to avoid PyIO(io) calling PyObject(::IO)
+#     PyIO(pyjlwrap_new(io))
+# end
 
 """
     PyTextIO(io::IO)

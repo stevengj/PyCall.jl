@@ -76,46 +76,46 @@ function init_datetime()
     Delta_FromDelta[] = PyDateTimeAPI.Delta_FromDelta
 end
 
-PyObject(d::Dates.Date) =
-    PyObject(@pycheckn ccall(Date_FromDate[], PyPtr,
-                             (Cint, Cint, Cint, PyPtr),
-                             Dates.year(d), Dates.month(d), Dates.day(d),
-                             DateType[]))
+# PyObject(d::Dates.Date) =
+#     PyObject(@pycheckn ccall(Date_FromDate[], PyPtr,
+#                              (Cint, Cint, Cint, PyPtr),
+#                              Dates.year(d), Dates.month(d), Dates.day(d),
+#                              DateType[]))
 
-PyObject(d::Dates.DateTime) =
-    PyObject(@pycheckn ccall(DateTime_FromDateAndTime[], PyPtr,
-                             (Cint, Cint, Cint, Cint, Cint, Cint, Cint,
-                              PyPtr, PyPtr),
-                             Dates.year(d), Dates.month(d), Dates.day(d),
-                             Dates.hour(d), Dates.minute(d), Dates.second(d),
-                             Dates.millisecond(d) * 1000,
-                             pynothing[], DateTimeType[]))
+# PyObject(d::Dates.DateTime) =
+#     PyObject(@pycheckn ccall(DateTime_FromDateAndTime[], PyPtr,
+#                              (Cint, Cint, Cint, Cint, Cint, Cint, Cint,
+#                               PyPtr, PyPtr),
+#                              Dates.year(d), Dates.month(d), Dates.day(d),
+#                              Dates.hour(d), Dates.minute(d), Dates.second(d),
+#                              Dates.millisecond(d) * 1000,
+#                              pynothing[], DateTimeType[]))
 
-PyDelta_FromDSU(days, seconds, useconds) =
-    PyObject(@pycheckn ccall(Delta_FromDelta[], PyPtr,
-                             (Cint, Cint, Cint, Cint, PyPtr),
-                             days, seconds, useconds,
-                             1, DeltaType[]))
+# PyDelta_FromDSU(days, seconds, useconds) =
+#     PyObject(@pycheckn ccall(Delta_FromDelta[], PyPtr,
+#                              (Cint, Cint, Cint, Cint, PyPtr),
+#                              days, seconds, useconds,
+#                              1, DeltaType[]))
 
-PyObject(p::Dates.Day) = PyDelta_FromDSU(Dates.value(p), 0, 0)
+# PyObject(p::Dates.Day) = PyDelta_FromDSU(Dates.value(p), 0, 0)
 
-function PyObject(p::Dates.Second)
-    # normalize to make Cint overflow less likely
-    s = Dates.value(p)
-    d = div(s, 86400)
-    s -= d * 86400
-    PyDelta_FromDSU(d, s, 0)
-end
+# function PyObject(p::Dates.Second)
+#     # normalize to make Cint overflow less likely
+#     s = Dates.value(p)
+#     d = div(s, 86400)
+#     s -= d * 86400
+#     PyDelta_FromDSU(d, s, 0)
+# end
 
-function PyObject(p::Dates.Millisecond)
-    # normalize to make Cint overflow less likely
-    ms = Dates.value(p)
-    s = div(ms, 1000)
-    ms -= s * 1000
-    d = div(s, 86400)
-    s -= d * 86400
-    PyDelta_FromDSU(d, s, ms * 1000)
-end
+# function PyObject(p::Dates.Millisecond)
+#     # normalize to make Cint overflow less likely
+#     ms = Dates.value(p)
+#     s = div(ms, 1000)
+#     ms -= s * 1000
+#     d = div(s, 86400)
+#     s -= d * 86400
+#     PyDelta_FromDSU(d, s, ms * 1000)
+# end
 
 PyDate_Check(o::PyObject) = pyisinstance(o, DateType[])
 PyDateTime_Check(o::PyObject) = pyisinstance(o, DateTimeType[])
@@ -131,37 +131,37 @@ function pydate_query(o::PyObject)
     end
 end
 
-function convert(::Type{Dates.DateTime}, o::PyObject)
-    if PyDate_Check(o)
-        GC.@preserve o let dt = convert(Ptr{UInt8}, PyPtr(o)) + PyDate_HEAD
-            if PyDateTime_Check(o)
-                Dates.DateTime((UInt(unsafe_load(dt,1))<<8)|unsafe_load(dt,2), # Y
-                            unsafe_load(dt,3), unsafe_load(dt,4), # month, day
-                            unsafe_load(dt,5), unsafe_load(dt,6), # hour, minute
-                            unsafe_load(dt,7), # second
-                            div((UInt(unsafe_load(dt,8)) << 16) |
-                                (UInt(unsafe_load(dt,9)) << 8) |
-                                unsafe_load(dt,10), 1000)) # μs ÷ 1000
-            else
-                Dates.DateTime((UInt(unsafe_load(dt,1))<<8)|unsafe_load(dt,2), # Y
-                            unsafe_load(dt,3), unsafe_load(dt,4)) # month, day
-            end
-        end
-    else
-        throw(ArgumentError("unknown DateTime type $o"))
-    end
-end
+# function convert(::Type{Dates.DateTime}, o::PyObject)
+#     if PyDate_Check(o)
+#         GC.@preserve o let dt = convert(Ptr{UInt8}, PyPtr(o)) + PyDate_HEAD
+#             if PyDateTime_Check(o)
+#                 Dates.DateTime((UInt(unsafe_load(dt,1))<<8)|unsafe_load(dt,2), # Y
+#                             unsafe_load(dt,3), unsafe_load(dt,4), # month, day
+#                             unsafe_load(dt,5), unsafe_load(dt,6), # hour, minute
+#                             unsafe_load(dt,7), # second
+#                             div((UInt(unsafe_load(dt,8)) << 16) |
+#                                 (UInt(unsafe_load(dt,9)) << 8) |
+#                                 unsafe_load(dt,10), 1000)) # μs ÷ 1000
+#             else
+#                 Dates.DateTime((UInt(unsafe_load(dt,1))<<8)|unsafe_load(dt,2), # Y
+#                             unsafe_load(dt,3), unsafe_load(dt,4)) # month, day
+#             end
+#         end
+#     else
+#         throw(ArgumentError("unknown DateTime type $o"))
+#     end
+# end
 
-function convert(::Type{Dates.Date}, o::PyObject)
-    if PyDate_Check(o)
-        GC.@preserve o let dt = convert(Ptr{UInt8}, PyPtr(o)) + PyDate_HEAD
-            Dates.Date((UInt(unsafe_load(dt,1)) << 8) | unsafe_load(dt,2), # Y
-                    unsafe_load(dt,3), unsafe_load(dt,4)) # month, day
-        end
-    else
-        throw(ArgumentError("unknown Date type $o"))
-    end
-end
+# function convert(::Type{Dates.Date}, o::PyObject)
+#     if PyDate_Check(o)
+#         GC.@preserve o let dt = convert(Ptr{UInt8}, PyPtr(o)) + PyDate_HEAD
+#             Dates.Date((UInt(unsafe_load(dt,1)) << 8) | unsafe_load(dt,2), # Y
+#                     unsafe_load(dt,3), unsafe_load(dt,4)) # month, day
+#         end
+#     else
+#         throw(ArgumentError("unknown Date type $o"))
+#     end
+# end
 
 function delta_dsμ(o::PyObject)
     PyDelta_Check(o) || throw(ArgumentError("$o is not a timedelta instance"))
@@ -173,17 +173,17 @@ end
 # that is not an exact multiple of the resulting unit?   For now,
 # follow the lead of Dates and truncate; see Julia issue #9169.
 
-function convert(::Type{Dates.Millisecond}, o::PyObject)
-    (d,s,μs) = delta_dsμ(o)
-    return Dates.Millisecond((86400d + s) * 1000 + div(μs, 1000))
-end
+# function convert(::Type{Dates.Millisecond}, o::PyObject)
+#     (d,s,μs) = delta_dsμ(o)
+#     return Dates.Millisecond((86400d + s) * 1000 + div(μs, 1000))
+# end
 
-function convert(::Type{Dates.Second}, o::PyObject)
-    (d,s,μs) = delta_dsμ(o)
-    return Dates.Second(86400d + s + div(μs, 1000000))
-end
+# function convert(::Type{Dates.Second}, o::PyObject)
+#     (d,s,μs) = delta_dsμ(o)
+#     return Dates.Second(86400d + s + div(μs, 1000000))
+# end
 
-function convert(::Type{Dates.Day}, o::PyObject)
-    (d,s,μs) = delta_dsμ(o)
-    return Dates.Day(d + div(s + div(μs, 1000000), 86400))
-end
+# function convert(::Type{Dates.Day}, o::PyObject)
+#     (d,s,μs) = delta_dsμ(o)
+#     return Dates.Day(d + div(s + div(μs, 1000000), 86400))
+# end

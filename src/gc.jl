@@ -23,7 +23,7 @@ const weakref_callback_obj = PyNULL() # weakref_callback Python method
 
 # Python expects the PyMethodDef structure to be a constant, so
 # we put it in a global to prevent gc.
-const weakref_callback_meth = Ref{PyMethodDef}()
+const weakref_callback_meth = Ref{CPyMethodDef}()
 
 # "embed" a reference to jo in po, using the weak-reference mechanism
 function pyembed(po::PyObject, jo::Any)
@@ -35,7 +35,7 @@ function pyembed(po::PyObject, jo::Any)
         weakref_callback_meth[] = PyMethodDef("weakref_callback", cf, METH_O)
         copy!(weakref_callback_obj,
               PyObject(@pycheckn ccall((@pysym :PyCFunction_NewEx), PyPtr,
-                                       (Ref{PyMethodDef}, Ptr{Cvoid}, Ptr{Cvoid}),
+                                       (Ref{CPyMethodDef}, Ptr{Cvoid}, Ptr{Cvoid}),
                                        weakref_callback_meth, C_NULL, C_NULL)))
     end
     wo = @pycheckn ccall((@pysym :PyWeakref_NewRef), PyPtr, (PyPtr,PyPtr),

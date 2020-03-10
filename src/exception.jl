@@ -47,14 +47,36 @@ function show(io::IO, e::PyError)
     end
 end
 
+function Base.showerror(io::IO, e::PyError)
+    print(io, "PyCall")
+    if ispynull(e.T)
+        println(io, " (null)")
+    else
+        print(io, ": ", e.T.__name__)
+        if !ispynull(e.val)
+            print(io, ": ", pystr(e.val))
+        end
+    end
+end
+
 #########################################################################
 # Conversion of Python exceptions into Julia exceptions
 
 # whether a Python exception has occurred
-pyerr_occurred() = ccall((@pysym :PyErr_Occurred), PyPtr, ()) != C_NULL
+"""
+    pyerr_occurred([t])
+
+True if a Python exception has occurred and (optionally) is of type `t`.
+"""
+pyerr_occurred() = CPyErr_Occurred() != C_NULL
+
+function pyerr_occurred(t)
+    e = CPyErr_Occurred()
+    e == C_NULL ? false : pyissubclass(e, t)
+end
 
 # call to discard Python exceptions
-pyerr_clear() = ccall((@pysym :PyErr_Clear), Cvoid, ())
+pyerr_clear() = CPyErr_Clear()
 
 function pyerr_check(msg::AbstractString, val::Any)
     pyerr_occurred() && throw(PyError(msg))
@@ -108,6 +130,7 @@ end
 # Mapping of Julia Exception types to Python exceptions
 
 const pyexc = Dict{DataType, PyPtr}()
+const pysymexc = Dict{Symbol, PyPtr}()
 mutable struct PyIOError <: Exception end
 
 function pyexc_initialize()
@@ -131,6 +154,23 @@ function pyexc_initialize()
     pyexc[UndefRefError] = @pyglobalobjptr :PyExc_RuntimeError
     pyexc[InterruptException] = @pyglobalobjptr :PyExc_KeyboardInterrupt
     pyexc[PyIOError] = @pyglobalobjptr :PyExc_IOError
+
+    pysymexc[:RuntimeError] = @pyglobalobjptr :PyExc_RuntimeError
+    pysymexc[:SystemError] = @pyglobalobjptr :PyExc_SystemError
+    pysymexc[:TypeError] = @pyglobalobjptr :PyExc_TypeError
+    pysymexc[:SyntaxError] = @pyglobalobjptr :PyExc_SyntaxError
+    pysymexc[:ValueError] = @pyglobalobjptr :PyExc_ValueError
+    pysymexc[:KeyError] = @pyglobalobjptr :PyExc_KeyError
+    pysymexc[:ImportError] = @pyglobalobjptr :PyExc_ImportError
+    pysymexc[:EOFError] = @pyglobalobjptr :PyExc_EOFError
+    pysymexc[:IndexError] = @pyglobalobjptr :PyExc_IndexError
+    pysymexc[:ZeroDivisionError] = @pyglobalobjptr :PyExc_ZeroDivisionError
+    pysymexc[:OverflowError] = @pyglobalobjptr :PyExc_OverflowError
+    pysymexc[:ArithmeticError] = @pyglobalobjptr :PyExc_ArithmeticError
+    pysymexc[:MemoryError] = @pyglobalobjptr :PyExc_MemoryError
+    pysymexc[:KeyboardInterrupt] = @pyglobalobjptr :PyExc_KeyboardInterrupt
+    pysymexc[:IOError] = @pyglobalobjptr :PyExc_IOError
+    pysymexc[:AttributeError] = @pyglobalobjptr :PyExc_AttributeError
 end
 
 _showerror_string(io::IO, e, ::Nothing) = showerror(io, e)
@@ -178,11 +218,22 @@ function showerror_string(e::T, bt = nothing) where {T}
     end
 end
 
-function pyraise(e, bt = nothing)
+function pyraise(e::Exception, bt = nothing)
     eT = typeof(e)
     pyeT = haskey(pyexc::Dict, eT) ? pyexc[eT] : pyexc[Exception]
-    ccall((@pysym :PyErr_SetString), Cvoid, (PyPtr, Cstring),
-          pyeT, string("Julia exception: ", showerror_string(e, bt)))
+    pyraise(pyeT, e, bt)
+end
+
+function pyraise(T::PyPtr, e::Exception, bt=nothing)
+    pyraise(T, string("Julia exception: ", showerror_string(e, bt)))
+end
+
+function pyraise(T::Symbol, msg::AbstractString)
+    pyraise(pysymexc[T], msg)
+end
+
+function pyraise(T::PyPtr, msg::AbstractString)
+    ccall(@pysym(:PyErr_SetString), Cvoid, (PyPtr, Cstring), T, msg)
 end
 
 # Second argument allows for backtraces passed to `pyraise` to be ignored.

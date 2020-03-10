@@ -18,37 +18,6 @@
 julia_args(f, args) = convert(PyAny, args)
 julia_kwarg(f, kw, arg) = convert(PyAny, arg)
 
-function _pyjlwrap_call(f, args_::PyPtr, kw_::PyPtr)
-    args = PyObject(args_) # don't need pyincref because of finally clause below
-    try
-        jlargs = julia_args(f, args)
-
-        # we need to use invokelatest to get execution in newest world
-        if kw_ == C_NULL
-            ret = Base.invokelatest(f, jlargs...)
-        else
-            kw = PyDict{Symbol,PyObject}(pyincref(kw_))
-            kwargs = [ (k,julia_kwarg(f,k,v)) for (k,v) in kw ]
-
-            # 0.6 `invokelatest` doesn't support kwargs, instead
-            # use a closure over kwargs. see:
-            #   https://github.com/JuliaLang/julia/pull/22646
-            f_kw_closure() = f(jlargs...; kwargs...)
-            ret = Core._apply_latest(f_kw_closure)
-        end
-
-        return pyreturn(ret)
-    catch e
-        @pyraise e
-    finally
-        setfield!(args, :o, PyPtr_NULL) # don't decref
-    end
-    return PyPtr_NULL
-end
-
-pyjlwrap_call(self_::PyPtr, args_::PyPtr, kw_::PyPtr) =
-    _pyjlwrap_call(unsafe_pyjlwrap_to_objref(self_), args_, kw_)
-
 ################################################################
 # allow the user to convert a Julia function into a Python
 # function with specified argument types, both to give more control

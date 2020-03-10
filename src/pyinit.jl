@@ -24,44 +24,6 @@ const pyxrange = Ref{PyPtr}(0)
 #########################################################################
 # initialize jlWrapType for pytype.jl
 
-function pyjlwrap_init()
-    # PyMemberDef stores explicit pointers, hence must be initialized at runtime
-    empty!(pyjlwrap_members)  # for AOT
-    push!(pyjlwrap_members, PyMemberDef(pyjlwrap_membername,
-                                        T_PYSSIZET, sizeof_pyjlwrap_head, READONLY,
-                                        pyjlwrap_doc),
-                            PyMemberDef(C_NULL,0,0,0,C_NULL))
-
-    # all cfunctions must be compiled at runtime
-    pyjlwrap_dealloc_ptr = @cfunction(pyjlwrap_dealloc, Cvoid, (PyPtr,))
-    pyjlwrap_repr_ptr = @cfunction(pyjlwrap_repr, PyPtr, (PyPtr,))
-    pyjlwrap_hash_ptr = @cfunction(pyjlwrap_hash, UInt, (PyPtr,))
-    pyjlwrap_hash32_ptr = @cfunction(pyjlwrap_hash32, UInt32, (PyPtr,))
-    pyjlwrap_call_ptr = @cfunction(pyjlwrap_call, PyPtr, (PyPtr,PyPtr,PyPtr))
-    pyjlwrap_getattr_ptr = @cfunction(pyjlwrap_getattr, PyPtr, (PyPtr,PyPtr))
-    pyjlwrap_getiter_ptr = @cfunction(pyjlwrap_getiter, PyPtr, (PyPtr,))
-
-    # detect at runtime whether we are using Stackless Python
-    try
-        pyimport("stackless")
-        Py_TPFLAGS_HAVE_STACKLESS_EXTENSION[] = Py_TPFLAGS_HAVE_STACKLESS_EXTENSION_
-    catch
-    end
-
-    PyTypeObject!(jlWrapType, "PyCall.jlwrap", sizeof(Py_jlWrap)) do t::PyTypeObject
-        t.tp_flags |= Py_TPFLAGS_BASETYPE
-        t.tp_members = pointer(pyjlwrap_members);
-        t.tp_dealloc = pyjlwrap_dealloc_ptr
-        t.tp_repr = pyjlwrap_repr_ptr
-        t.tp_call = pyjlwrap_call_ptr
-        t.tp_getattro = pyjlwrap_getattr_ptr
-        t.tp_iter = pyjlwrap_getiter_ptr
-        t.tp_hash = sizeof(Py_hash_t) < sizeof(Int) ?
-                    pyjlwrap_hash32_ptr : pyjlwrap_hash_ptr
-        t.tp_weaklistoffset = fieldoffset(Py_jlWrap, 3)
-    end
-end
-
 #########################################################################
 # Virtual environment support
 
@@ -136,7 +98,7 @@ function __init__()
     empty!(pycall_gc)
     empty!(pyexc)
     empty!(pytype_queries)
-    empty!(permanent_strings)
+    # empty!(permanent_strings)
 
     # sanity check: in Pkg for Julia 0.7+, the location of Conda can change
     # if e.g. you checkout Conda master, and we'll need to re-build PyCall
@@ -208,6 +170,7 @@ function __init__()
     copy!(builtin, pyimport(pyversion.major < 3 ? "__builtin__" : "builtins"))
     copy!(pyproperty, pybuiltin(:property))
 
+    capi_init()
     pyexc_initialize() # mappings from Julia Exception types to Python exceptions
 
     # cache Python None -- PyPtr, not PyObject, to prevent it from

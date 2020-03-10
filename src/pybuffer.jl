@@ -4,32 +4,12 @@
 #     (thanks to @jakebolewski for his work on this)
 
 #############################################################################
-# mirror of Py_buffer struct in Python Include/object.h
-
-struct Py_buffer
-    buf::Ptr{Cvoid}
-    obj::PyPtr
-    len::Cssize_t
-    itemsize::Cssize_t
-
-    readonly::Cint
-    ndim::Cint
-    format::Ptr{Cchar}
-    shape::Ptr{Cssize_t}
-    strides::Ptr{Cssize_t}
-    suboffsets::Ptr{Cssize_t}
-
-    # some opaque padding fields to account for differences between
-    # Python versions (the structure changed in Python 2.7 and 3.3)
-    internal0::Ptr{Cvoid}
-    internal1::Ptr{Cvoid}
-    internal2::Ptr{Cvoid}
-end
+# mirror of CPy_buffer struct in Python Include/object.h
 
 mutable struct PyBuffer
-    buf::Py_buffer
+    buf::CPy_buffer
     PyBuffer() = begin
-        b = new(Py_buffer(C_NULL, PyPtr_NULL, 0, 0,
+        b = new(CPy_buffer(C_NULL, PyPtr_NULL, 0, 0,
                           0, 0, C_NULL, C_NULL, C_NULL, C_NULL,
                           C_NULL, C_NULL, C_NULL))
         finalizer(pydecref, b)
@@ -98,21 +78,6 @@ Base.strides(b::PyBuffer) = ((stride(b,i) for i in 1:b.buf.ndim)...,)
 iscontiguous(b::PyBuffer) =
     1 == ccall((@pysym :PyBuffer_IsContiguous), Cint,
                (Ref{PyBuffer}, Cchar), b, 'A')
-
-#############################################################################
-# pybuffer constant values from Include/object.h
-const PyBUF_SIMPLE    = convert(Cint, 0)
-const PyBUF_WRITABLE  = convert(Cint, 0x0001)
-const PyBUF_FORMAT    = convert(Cint, 0x0004)
-const PyBUF_ND        = convert(Cint, 0x0008)
-const PyBUF_STRIDES        = convert(Cint, 0x0010) | PyBUF_ND
-const PyBUF_C_CONTIGUOUS   = convert(Cint, 0x0020) | PyBUF_STRIDES
-const PyBUF_F_CONTIGUOUS   = convert(Cint, 0x0040) | PyBUF_STRIDES
-const PyBUF_ANY_CONTIGUOUS = convert(Cint, 0x0080) | PyBUF_STRIDES
-const PyBUF_INDIRECT       = convert(Cint, 0x0100) | PyBUF_STRIDES
-const PyBUF_ND_STRIDED    = Cint(PyBUF_WRITABLE | PyBUF_FORMAT | PyBUF_ND |
-                                 PyBUF_STRIDES)
-const PyBUF_ND_CONTIGUOUS = PyBUF_ND_STRIDED | PyBUF_ANY_CONTIGUOUS
 
 # construct a PyBuffer from a PyObject, if possible
 function PyBuffer(o::Union{PyObject,PyPtr}, flags=PyBUF_SIMPLE)

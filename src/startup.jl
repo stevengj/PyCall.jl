@@ -122,10 +122,10 @@ if libpython == nothing
         :(cglobal($(esc(name))))
     end
     macro pyglobalobj(name)
-        :(cglobal($(esc(name)), PyObject_struct))
+        :(cglobal($(esc(name)), CPyObject))
     end
     macro pyglobalobjptr(name)
-        :(unsafe_load(cglobal($(esc(name)), Ptr{PyObject_struct})))
+        :(unsafe_load(cglobal($(esc(name)), Ptr{CPyObject})))
     end
 else
     macro pysym(func)
@@ -135,9 +135,9 @@ else
         :(cglobal(($(esc(name)), libpython)))
     end
     macro pyglobalobj(name)
-        :(cglobal(($(esc(name)), libpython), PyObject_struct))
+        :(cglobal(($(esc(name)), libpython), CPyObject))
     end
     macro pyglobalobjptr(name)
-        :(unsafe_load(cglobal(($(esc(name)), libpython), Ptr{PyObject_struct})))
+        :(unsafe_load(cglobal(($(esc(name)), libpython), Ptr{CPyObject})))
     end
 end
