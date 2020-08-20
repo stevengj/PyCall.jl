@@ -693,6 +693,38 @@ end
     @test anonymous.sys != PyNULL()
 end
 
+@testset "eval last expression only" begin
+    # Can both exec definitions and eval the last expression in the same call
+    @test py"""
+        def foo(x):
+            return x+1
+        foo
+        """(1) == 2
+    # The defined `foo` still exists (was fully `exec`'d).
+    @test py"foo"(2) == 3
+
+    # Can exec definitions that are only a single line
+    py"def bar(): return 1"
+    @test py"bar()" == 1
+
+    @testset "interpolated locals only saved if execs" begin
+        # Interpolated locals are only saved if any statements are `eval`'d. (If exec only,
+        # nothing needs to be saved.)
+        beforelen = length(PyCall.pynamespace(@__MODULE__))
+        py"$2"
+        @test length(PyCall.pynamespace(@__MODULE__)) == beforelen
+        py"""
+        $2
+        """
+        @test length(PyCall.pynamespace(@__MODULE__)) == beforelen
+        # If the pycall contains definitions to be exec'd, the locals remain
+        py"""def foo(): return 1
+        $2"""
+        @test length(PyCall.pynamespace(@__MODULE__)) == beforelen + 1
+    end
+end
+
+
 struct Unprintable end
 Base.show(::IO, ::Unprintable) = error("show(::IO, ::Unprintable) called")
 Base.show(::IO, ::Type{Unprintable}) = error("show(::IO, ::Type{Unprintable}) called")
