@@ -4,6 +4,7 @@ if isdefined(Base, :Experimental) && isdefined(Base.Experimental, Symbol("@optle
     @eval Base.Experimental.@optlevel 1
 end
 
+using PyPreferences
 using VersionParsing
 
 export pycall, pycall!, pyimport, pyimport_e, pybuiltin, PyObject, PyReverseDims,

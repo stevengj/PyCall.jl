@@ -9,6 +9,7 @@ Dates = "ade2ca70-3891-5945-98fb-dc099432e06a"
 Libdl = "8f399da3-3557-5675-b5ff-fb832c97cbdb"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 MacroTools = "1914dd2f-81c6-5fcd-8719-6d5c9610ff09"
+PyPreferences = "cc9521c6-0242-4dda-8d66-c47a9d9eec02"
 Serialization = "9e88b42a-f829-5b0c-bbe9-9e923198166b"
 VersionParsing = "81def892-9a0e-5fdd-b105-ffc91e053289"
 
