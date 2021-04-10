@@ -18,24 +18,24 @@ jobs:
           - macos-latest
           - windows-latest
         architecture: [x64]
-        python-version: ['2.7', '3.8']
+        python-version: ['2.7', '3.9']
         julia-version: ['1.0', '1.5', 'nightly']
         include:
           - os: windows-latest
             architecture: x86
-            python-version: '3.8'
+            python-version: '3.9'
             julia-version: '1.5'
           - os: ubuntu-latest
             architecture: x64
-            python-version: '3.7'
+            python-version: '3.9'
             julia-version: '1.5'
           - os: ubuntu-latest
             architecture: x64
-            python-version: '3.8'
+            python-version: '3.9'
             julia-version: '1.4'
           - os: ubuntu-latest
             architecture: x64
-            python-version: '3.8'
+            python-version: '3.9'
             julia-version: '1.3'
       fail-fast: false
     name: Test
