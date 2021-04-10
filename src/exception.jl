@@ -28,11 +28,35 @@ struct PyError <: Exception
     # indicator.
 end
 
+function pystr_nofail(o::PyObject)
+    if ispynull(o)
+        return "NULL"
+    else
+        s = ccall((@pysym :PyObject_Str), PyPtr, (PyPtr,), o)
+        if (s == C_NULL)
+            pyerr_clear()
+            return string(PyPtr(o))
+        end
+        return convert(AbstractString, PyObject(s))
+    end
+end
+
+function Base.showerror(io::IO, e::PyError)
+    println(io, "PyError:\n", pystr_nofail(e.val))
+    if !ispynull(e.traceback)
+        o = pycall(format_traceback, PyObject, e.traceback)
+        if !ispynull(o)
+            for s in PyVector{AbstractString}(o)
+                print(io, s)
+            end
+        end
+    end
+end
+
 function show(io::IO, e::PyError)
     print(io, "PyError",
           isempty(e.msg) ? e.msg : string(" (",e.msg,")"),
           " ")
-
     if ispynull(e.T)
         println(io, "None")
     else
