@@ -29,7 +29,13 @@ const weakref_callback_meth = Ref{PyMethodDef}()
 function pyembed(po::PyObject, jo::Any)
     # If there's a need to support immutable embedding,
     # the API needs to be changed to return the pointer.
-    isimmutable(jo) && throw(ArgumentError("pyembed: immutable argument not allowed"))
+    if isimmutable(jo)
+        if applicable(parent, jo)
+            return pyembed(po, parent(jo) )
+        else
+            throw(ArgumentError("pyembed: immutable argument not allowed"))
+        end
+    end
     if ispynull(weakref_callback_obj)
         cf = @cfunction(weakref_callback, PyPtr, (PyPtr,PyPtr))
         weakref_callback_meth[] = PyMethodDef("weakref_callback", cf, METH_O)
@@ -43,3 +49,10 @@ function pyembed(po::PyObject, jo::Any)
     pycall_gc[wo] = jo
     return po
 end
+
+# Embed the mutable type underlying the immutable view of the array
+# See Base.unsafe_convert(::Type{Ptr{T}}, jo::ArrayType) for specific array types
+pyembed(po::PyObject, jo::SubArray         ) = pyembed(po, jo.parent)
+pyembed(po::PyObject, jo::ReshapedArray    ) = pyembed(po, jo.parent)
+pyembed(po::PyObject, jo::ReinterpretArray ) = pyembed(po, jo.parent)
+pyembed(po::PyObject, jo::PermutedDimsArray) = pyembed(po, jo.parent)

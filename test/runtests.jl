@@ -72,6 +72,8 @@ const PyInt = pyversion < v"3" ? Int : Clonglong
     @test roundtripeq(Int32)
     @test roundtripeq(Dict(1 => "hello", 2 => "goodbye")) && roundtripeq(Dict())
     @test roundtripeq(UInt8[1,3,4,5])
+    @test roundtripeq(1:5)
+    @test roundtripeq(5:2:10)
     @test roundtrip(3 => 4) == (3,4)
     @test roundtrip(Pair{Int,Int}, 3 => 4) == Pair(3,4)
     @test eltype(roundtrip([Ref(1), Ref(2)])) == typeof(Ref(1))
@@ -106,6 +108,42 @@ const PyInt = pyversion < v"3" ? Int : Clonglong
                 @test eltype(PyArray(o)) == PyPtr
                 @test GC.@preserve(o, pyincref.(PyArray(o))) == a
             end
+        end
+        let A = Float64[1 2; 3 4]
+            # Normal array
+            B = copy(A)
+            C = PyArray( PyObject(B) )
+            @test C == B
+            B[1] = 3
+            @test C == B && C[1] == B[1]
+
+            # SubArray
+            B = view(A, 1:2, 2:2)
+            C = PyArray( PyObject(B) )
+            @test C == B
+            A[3] = 5
+            @test C == B && C[1] == A[3]
+
+            # ReshapedArray
+            B = Base.ReshapedArray( A, (1,4), () )
+            C = PyArray( PyObject(B) )
+            @test C == B
+            A[2] = 6
+            @test C == B && C[2] == A[2]
+
+            # PermutedDimsArray
+            B = PermutedDimsArray(A, (2,1) )
+            C = PyArray( PyObject(B) )
+            @test C == B
+            A[1] == 7
+            @test C == B && C[1] == A[1]
+
+            # ReinterpretArray
+            B = reinterpret(UInt64, A)
+            C = PyArray( PyObject(B) )
+            @test C == B
+            A[1] = 12
+            @test C == B && C[1] == reinterpret(UInt64, A[1])
         end
     end
     @test PyVector(PyObject([1,3.2,"hello",true])) == [1,3.2,"hello",true]

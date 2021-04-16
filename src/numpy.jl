@@ -172,7 +172,7 @@ const NPY_ARRAY_WRITEABLE = Int32(0x0400)
 # dimensions. For example, although NumPy works with both row-major and
 # column-major data, some Python libraries like OpenCV seem to require
 # row-major data (the default in NumPy). In such cases, use PyReverseDims(array)
-function NpyArray(a::StridedArray{T}, revdims::Bool) where T<:PYARR_TYPES
+function NpyArray(a::AbstractArray{T}, revdims::Bool) where T<:PYARR_TYPES
     @npyinitialize
     size_a = revdims ? reverse(size(a)) : size(a)
     strides_a = revdims ? reverse(strides(a)) : strides(a)
@@ -186,7 +186,7 @@ function NpyArray(a::StridedArray{T}, revdims::Bool) where T<:PYARR_TYPES
     return PyObject(p, a)
 end
 
-function PyObject(a::StridedArray{T}) where T<:PYARR_TYPES
+function PyObject(a::AbstractArray{T}) where T<:PYARR_TYPES
     try
         return NpyArray(a, false)
     catch
@@ -194,7 +194,7 @@ function PyObject(a::StridedArray{T}) where T<:PYARR_TYPES
     end
 end
 
-function PyReverseDims(a::StridedArray{T,N}) where {T<:PYARR_TYPES,N}
+function PyReverseDims(a::AbstractArray{T,N}) where {T<:PYARR_TYPES,N}
     try
         return NpyArray(a, true)
     catch
