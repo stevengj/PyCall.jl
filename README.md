@@ -298,7 +298,7 @@ use `PyDict` as the return type of a `pycall` returning a dictionary,
 or call `PyDict(o::PyObject)` on a dictionary object `o`.  By
 default, a `PyDict` is an `Any => Any` dictionary (or actually `PyAny
 => PyAny`) that performs runtime type inference, but if your Python
-dictionary has known, fixed types you can insteady use `PyDict{K,V}` given
+dictionary has known, fixed types you can instead use `PyDict{K,V}` given
 the key and value types `K` and `V` respectively.
 
 Currently, passing Julia dictionaries to Python makes a copy of the Julia
