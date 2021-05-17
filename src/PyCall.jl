@@ -491,11 +491,72 @@ function pyimport_e(name::AbstractString)
 end
 
 """
+    called_from_toplevel() :: Bool
+
+Check if this function is called at module top-level scope than via
+`__init__`.
+"""
+function called_from_toplevel()
+    for frame in stacktrace()
+        frame.func === Symbol("top-level scope") && return true
+        frame.func === :__init__ && return false
+    end
+    return true
+end
+
+const _disable_warn_pyimport_at_toplevel = Ref(false)
+
+function warn_pyimport_at_toplevel(name)
+    ccall(:jl_generating_output, Cint, ()) == 0 && return
+    _disable_warn_pyimport_at_toplevel[] && return
+    called_from_toplevel() || return
+    frames = stacktrace()
+    if length(frames) >= 3
+        # frames[1]: this function
+        # frames[2]: pyimport
+        # frames[3]: user's code
+        file = string(frames[3].file)
+        line = frames[3].line
+        location = " in $file:$line"
+    else
+        # something is terribly wrong, but try not fail
+        location = ""
+    end
+    @error """
+Python module `$name` imported at top-level scope$location.
+
+This is very likely to be a miss-use of PyCall API.  Importing Python
+modules _MUST_ be done in `__init__` function.  Please read:
+https://github.com/JuliaPy/PyCall.jl#using-pycall-from-julia-modules
+
+If importing Python code at import time cannot be avoided, use
+`disable_warn_pyimport_at_toplevel` to disable this warning within a
+restricted code block.
+"""
+end
+
+"""
+    disable_warn_pyimport_at_toplevel(f)
+
+Run function `f` while disabling warning about top-level Python
+imports.
+"""
+function disable_warn_pyimport_at_toplevel(f)
+    try
+        _disable_warn_pyimport_at_toplevel[] = true
+        f()
+    finally
+        _disable_warn_pyimport_at_toplevel[] = false
+    end
+end
+
+"""
     pyimport(s::AbstractString)
 
 Import the Python module `s` (a string or symbol) and return a pointer to it (a `PyObject`). Functions or other symbols in the module may then be looked up by s[name] where name is a string (for the raw PyObject) or symbol (for automatic type-conversion). Unlike the @pyimport macro, this does not define a Julia module and members cannot be accessed with `s.name`
 """
 function pyimport(name::AbstractString)
+    warn_pyimport_at_toplevel(name)
     o = _pyimport(name)
     if ispynull(o)
         if pyerr_occurred()
