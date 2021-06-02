@@ -651,12 +651,14 @@ function _pywith(EXPR,VAR,TYPE,BLOCK)
                 $(VAR==nothing ? :() : :($(esc(VAR)) = value))
                 $(esc(BLOCK))
             catch err
+                global exc
                 exc = false
                 if !(@pycall exit(mgr, pyimport(:sys).exc_info()...)::Bool)
                     throw(err)
                 end
             end
         finally
+            global exc
             if exc
                 exit(mgr, nothing, nothing, nothing)
             end
