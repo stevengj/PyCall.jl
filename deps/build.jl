@@ -43,7 +43,7 @@ mkpath(dirname(prefsfile))
 try # make sure deps.jl file is removed on error
     python = try
         let py = get(ENV, "PYTHON", isfile(prefsfile) ? readchomp(prefsfile) :
-                     (Sys.isunix() && !Sys.isapple()) || Sys.ARCH ∉ (:i686, :x86_64) ?
+                     (Sys.isunix() && !Sys.isapple()) ?
                      whichfirst("python3", "python") : "Conda"),
             vers = isempty(py) || py == "Conda" ? v"0.0" : vparse(pyconfigvar(py,"VERSION","0.0"))
             if vers < v"2.7"
@@ -64,19 +64,14 @@ try # make sure deps.jl file is removed on error
             py
         end
     catch e1
-        if Sys.ARCH in (:i686, :x86_64)
-            if isa(e1, UseCondaPython)
-                @info string("Using the Python distribution in the Conda package by default.\n",
-                     "To use a different Python version, set ENV[\"PYTHON\"]=\"pythoncommand\" and re-run Pkg.build(\"PyCall\").")
-            else
-                @info string( "No system-wide Python was found; got the following error:\n",
-                      "$e1\nusing the Python distribution in the Conda package")
-            end
-            abspath(Conda.PYTHONDIR, "python" * (Sys.iswindows() ? ".exe" : ""))
+        if isa(e1, UseCondaPython)
+            @info string("Using the Python distribution in the Conda package by default.\n",
+                 "To use a different Python version, set ENV[\"PYTHON\"]=\"pythoncommand\" and re-run Pkg.build(\"PyCall\").")
         else
-            error("No system-wide Python was found; got the following error:\n",
-                  "$e1")
+            @info string( "No system-wide Python was found; got the following error:\n",
+                  "$e1\nusing the Python distribution in the Conda package")
         end
+        abspath(Conda.PYTHONDIR, "python" * (Sys.iswindows() ? ".exe" : ""))
     end
 
     use_conda = dirname(python) == abspath(Conda.PYTHONDIR)
