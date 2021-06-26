@@ -387,7 +387,7 @@ and also by providing more type information to the Julia compiler.
 * `pybuiltin(s)`: Look up `s` (a string or symbol) among the global Python
   builtins.  If `s` is a string it returns a `PyObject`, while if `s` is a
   symbol it returns the builtin converted to `PyAny`.  (You can also use `py"s"`
-  to look up builtins or other Python globas.)
+  to look up builtins or other Python globals.)
 
 Occasionally, you may need to pass a keyword argument to Python that
 is a [reserved word](https://en.wikipedia.org/wiki/Reserved_word) in Julia.

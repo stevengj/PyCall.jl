@@ -512,7 +512,7 @@ that you did not install $name in the Python version being used by PyCall.
 PyCall is currently configured to use the Julia-specific Python distribution
 installed by the Conda.jl package.  To install the $name module, you can
 use `pyimport_conda("$(escape_string(name))", PKG)`, where PKG is the Anaconda
-package the contains the module $name, or alternatively you can use the
+package that contains the module $name, or alternatively you can use the
 Conda package directly (via `using Conda` followed by `Conda.add` etcetera).
 
 Alternatively, if you want to use a different Python distribution on your
