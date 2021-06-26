@@ -359,7 +359,8 @@ and also by providing more type information to the Julia compiler.
   Python's [`eval`](https://docs.python.org/3/library/functions.html#eval) function, and returns the result
   converted to `PyAny`.  Alternatively, `py"..."o` returns the raw `PyObject`
   (which can then be manually converted if desired).   You can interpolate
-  Julia variables and other expressions into the Python code with `$`,
+  Julia variables and other expressions into the Python code (except for into
+  Python strings contained in Python code), with `$`,
   which interpolates the *value* (converted to `PyObject`) of the given
   expression---data is not passed as a string, so this is different from
   ordinary Julia string interpolation.  e.g. `py"sum($([1,2,3]))"` calls the
@@ -387,7 +388,7 @@ and also by providing more type information to the Julia compiler.
 * `pybuiltin(s)`: Look up `s` (a string or symbol) among the global Python
   builtins.  If `s` is a string it returns a `PyObject`, while if `s` is a
   symbol it returns the builtin converted to `PyAny`.  (You can also use `py"s"`
-  to look up builtins or other Python globas.)
+  to look up builtins or other Python globals.)
 
 Occasionally, you may need to pass a keyword argument to Python that
 is a [reserved word](https://en.wikipedia.org/wiki/Reserved_word) in Julia.
