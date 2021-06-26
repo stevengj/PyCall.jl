@@ -99,7 +99,7 @@ macro pycall(ex)
     end
     func = ex.args[1].args[1]
     args, kwargs = ex.args[1].args[2:end], []
-    if isexpr(args[1],:parameters)
+    if !isempty(args) && isexpr(args[1],:parameters)
         kwargs, args = args[1], args[2:end]
     end
     T = ex.args[2]

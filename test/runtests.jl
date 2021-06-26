@@ -529,6 +529,7 @@ const PyInt = pyversion < v"3" ? Int : Clonglong
 
     # @pycall macro expands correctly
     _pycall = GlobalRef(PyCall,:pycall)
+    @test macroexpand(@__MODULE__, :(@pycall foo()::T)) == :($(_pycall)(foo, T))
     @test macroexpand(@__MODULE__, :(@pycall foo(bar)::T)) == :($(_pycall)(foo, T, bar))
     @test macroexpand(@__MODULE__, :(@pycall foo(bar, args...)::T)) == :($(_pycall)(foo, T, bar, args...))
     @test macroexpand(@__MODULE__, :(@pycall foo(bar; kwargs...)::T)) == :($(_pycall)(foo, T, bar; kwargs...))
