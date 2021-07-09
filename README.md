@@ -20,7 +20,12 @@ install the files. Julia 0.7 or later is required.
 
 The latest development version of PyCall is available from
 <https://github.com/JuliaPy/PyCall.jl>.  If you want to switch to
-this after installing the package, run `Pkg.checkout("PyCall"); Pkg.build("PyCall")`.
+this after installing the package, run:
+
+```julia
+Pkg.add(PackageSpec(name="PyCall", rev="master"))
+Pkg.build("PyCall")`
+```
 
 By default on Mac and Windows systems, `Pkg.add("PyCall")`
 or `Pkg.build("PyCall")` will use the
